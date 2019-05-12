@@ -30,7 +30,7 @@ void InitSA()
     {
         void operator()(injector::reg_pack& regs)
         {
-            float f = (1.0 + ((ms_fTimeStep / magic) / 1.5f)) * (ms_fTimeStep / magic);
+            float f = (1.0f + ((ms_fTimeStep / magic) / 1.5f)) * (ms_fTimeStep / magic);
             _asm {fmul dword ptr[f]}
         }
     }; injector::MakeInline<BuoyancyFix>(0x6C27AE, 0x6C27AE + 6);
