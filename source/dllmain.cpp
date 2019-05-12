@@ -44,8 +44,19 @@ void InitSA()
         }
     }; injector::MakeInline<DiveFix>(0x68A42B, 0x68A42B + 6);
 
-    //CarSlowDownSpeedFix
-    injector::WriteMemory<float>(0x5BFAAE + 6, 0.9f * ms_fTimeStep / magic);
+    struct CarSlowDownSpeedFix
+    {
+        void operator()(injector::reg_pack& regs)
+        {
+            float f = **(float**)0x5BFAB0 * (ms_fTimeStep / magic);
+            _asm {fld dword ptr[f]}
+        }
+    };
+    injector::MakeInline<CarSlowDownSpeedFix>(0x6D6E69, 0x6D6E69 + 6);
+    injector::MakeInline<CarSlowDownSpeedFix>(0x6D6EA8, 0x6D6EA8 + 6);
+    injector::MakeInline<CarSlowDownSpeedFix>(0x6D767F, 0x6D767F + 6);
+    injector::MakeInline<CarSlowDownSpeedFix>(0x6D76AB, 0x6D76AB + 6);
+    injector::MakeInline<CarSlowDownSpeedFix>(0x6D76CD, 0x6D76CD + 6);
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved)
