@@ -104,31 +104,31 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GTASA zDebug|Win32'">
     <OutDir>E:\Documents\GTA Brasil new\</OutDir>
     <IntDir>$(ProjectDir).obj\GTASA\Debug\</IntDir>
-    <TargetName>FramerateVigilante.SA_d</TargetName>
+    <TargetName>FramerateVigilante.SA</TargetName>
     <TargetExt>.asi</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GTAVC Release|Win32'">
-    <OutDir>E:\Documents\GTA Brasil new\</OutDir>
+    <OutDir>E:\Documents\GTA Vice City\</OutDir>
     <IntDir>$(ProjectDir).obj\GTAVC\Release\</IntDir>
     <TargetName>FramerateVigilante.VC</TargetName>
     <TargetExt>.asi</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GTAVC zDebug|Win32'">
-    <OutDir>E:\Documents\GTA Brasil new\</OutDir>
+    <OutDir>E:\Documents\GTA Vice City\</OutDir>
     <IntDir>$(ProjectDir).obj\GTAVC\Debug\</IntDir>
-    <TargetName>FramerateVigilante.VC_d</TargetName>
+    <TargetName>FramerateVigilante.VC</TargetName>
     <TargetExt>.asi</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GTA3 Release|Win32'">
-    <OutDir>E:\Documents\GTA Brasil new\</OutDir>
+    <OutDir>E:\Documents\Grand Theft Auto III\</OutDir>
     <IntDir>$(ProjectDir).obj\GTA3\Release\</IntDir>
     <TargetName>FramerateVigilante.III</TargetName>
     <TargetExt>.asi</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GTA3 zDebug|Win32'">
-    <OutDir>E:\Documents\GTA Brasil new\</OutDir>
+    <OutDir>E:\Documents\Grand Theft Auto III\</OutDir>
     <IntDir>$(ProjectDir).obj\GTA3\Debug\</IntDir>
-    <TargetName>FramerateVigilante.III_d</TargetName>
+    <TargetName>FramerateVigilante.III</TargetName>
     <TargetExt>.asi</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='GTASA Release|Win32'">
