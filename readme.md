@@ -1,4 +1,4 @@
 # Framerate Vigilante
 
-Required: [https://github.com/DK22Pac/plugin-sdk](plugin-sdk)
+Required: [plugin-sdk](https://github.com/DK22Pac/plugin-sdk)
 
