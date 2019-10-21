@@ -260,6 +260,10 @@
   <ItemGroup>
     <ClCompile Include="FramerateVigilante.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="IniReader\IniReader.h" />
+    <ClInclude Include="IniReader\ini_parser.hpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

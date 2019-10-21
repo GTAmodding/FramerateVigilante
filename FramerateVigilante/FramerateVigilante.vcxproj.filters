@@ -3,4 +3,17 @@
   <ItemGroup>
     <ClCompile Include="FramerateVigilante.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="IniReader">
+      <UniqueIdentifier>{f7107c50-15df-49f3-9832-d57037073419}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="IniReader\ini_parser.hpp">
+      <Filter>IniReader</Filter>
+    </ClInclude>
+    <ClInclude Include="IniReader\IniReader.h">
+      <Filter>IniReader</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
