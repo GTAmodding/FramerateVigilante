@@ -6,8 +6,10 @@
 
 using namespace plugin;
 using namespace injector;
+using namespace std;
 
 void asm_fmul (float f) { _asm {fmul dword ptr[f]} }
+void asm_fdiv (float f) { _asm {fdiv dword ptr[f]} }
 void asm_fld  (float f) { _asm {fld  dword ptr[f]} }
 void asm_fadd (float f) { _asm {fadd dword ptr[f]} }
 void asm_fsub (float f) { _asm {fsub dword ptr[f]} }
@@ -30,17 +32,25 @@ public:
 		{
 			void operator()(reg_pack& regs)
 			{
-				asm_fmul((CTimer::ms_fTimeStep / magic));
+				asm_fmul(CTimer::ms_fTimeStep / magic);
 			}
 		};
-		 
+
+		struct MagicTimeStepFLD
+		{
+			void operator()(reg_pack& regs)
+			{
+				asm_fld(CTimer::ms_fTimeStep / magic);
+			}
+		};
+		
 		/////////////////////////////////////
 
 		// Run after. It fixes problems such as installing f92la in modloader while using handling patch.
 		Events::initRwEvent += [] { 
 
 			CIniReader ini("FramerateVigilante.ini");
-			unsigned int fpsLimit = ini.ReadInteger("Settings", "FPSlimit", -1);
+			unsigned int fpsLimit = ini.ReadInteger("Settings", "FPSlimit", 0);
 			if (fpsLimit > 0) {
 			#if defined(GTASA)
 				WriteMemory<uint8_t>(0x53E94C, 0, true); //removes 14 ms frame delay
@@ -58,6 +68,16 @@ public:
 			}
 
 		#if defined(GTASA)
+
+
+			struct AimingRifleWalkFix
+			{
+				void operator()(reg_pack& regs)
+				{
+					asm_fmul(0.07f / (CTimer::ms_fTimeStep / magic));
+				}
+			}; MakeInline<AimingRifleWalkFix>(0x61E0CA, 0x61E0CA + 6);
+
 
 			struct SwimSpeedFix
 			{
@@ -349,6 +369,5 @@ public:
 		#endif 
 
 		}; //endof init
-
     }
 } framerateVigilante;
