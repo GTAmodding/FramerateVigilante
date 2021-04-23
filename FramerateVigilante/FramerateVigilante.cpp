@@ -122,7 +122,17 @@ public:
 					asm_fmul(f);
 				}
 			}; MakeInline<DiveFix>(0x68A42B, 0x68A42B + 6);
-
+			
+			
+			struct DiveSprintComeToSurfaceFix
+			{
+				void operator()(reg_pack& regs)
+				{
+					float f = 1.0f / (CTimer::ms_fTimeStep / magic);
+					asm_fadd(0.01f);
+					asm_fmul(f);
+				}
+			}; MakeInline<DiveFix>(0x68A4CA, 0x68A4CA + 6);
 
 			struct SkimmerResistanceFix
 			{
