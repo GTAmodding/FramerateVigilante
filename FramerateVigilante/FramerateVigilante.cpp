@@ -132,7 +132,7 @@ public:
 					asm_fadd(0.01f);
 					asm_fmul(f);
 				}
-			}; MakeInline<DiveFix>(0x68A4CA, 0x68A4CA + 6);
+			}; MakeInline<DiveSprintComeToSurfaceFix>(0x68A4CA, 0x68A4CA + 6);
 
 			struct SkimmerResistanceFix
 			{
