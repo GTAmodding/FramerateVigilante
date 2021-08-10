@@ -8,19 +8,19 @@ using namespace plugin;
 using namespace injector;
 using namespace std;
 
-void asm_fmul (float f) { _asm {fmul dword ptr[f]} }
-void asm_fdiv (float f) { _asm {fdiv dword ptr[f]} }
-void asm_fld  (float f) { _asm {fld  dword ptr[f]} }
-void asm_fadd (float f) { _asm {fadd dword ptr[f]} }
-void asm_fsub (float f) { _asm {fsub dword ptr[f]} }
-void asm_fld_st1()  { _asm {fld st(1)} }
-void asm_fld_st2()  { _asm {fld st(2)} }
-
 class FramerateVigilante
 {
 public:
 
-    FramerateVigilante()
+	static void asm_fmul(float f) { _asm {fmul dword ptr[f]} }
+	static void asm_fdiv(float f) { _asm {fdiv dword ptr[f]} }
+	static void asm_fld(float f) { _asm {fld  dword ptr[f]} }
+	static void asm_fadd(float f) { _asm {fadd dword ptr[f]} }
+	static void asm_fsub(float f) { _asm {fsub dword ptr[f]} }
+	static void asm_fld_st1() { _asm {fld st(1)} }
+	static void asm_fld_st2() { _asm {fld st(2)} }
+
+	FramerateVigilante()
 	{
 		/////////////////////////////////////
 
@@ -43,12 +43,12 @@ public:
 				asm_fld(CTimer::ms_fTimeStep / magic);
 			}
 		};
-		
+
 		/////////////////////////////////////
 
 		// Run after. It fixes problems such as installing f92la in modloader while using handling patch.
-		Events::initRwEvent += [] { 
-
+		Events::initRwEvent += [] {
+			
 			CIniReader ini("FramerateVigilante.ini");
 			unsigned int fpsLimit = ini.ReadInteger("Settings", "FPSlimit", 0);
 			if (fpsLimit > 0) {
@@ -100,10 +100,10 @@ public:
 				void operator()(reg_pack& regs)
 				{
 					float f = CTimer::ms_fTimeStep;
-					CPhysical *physical = (CPhysical *)regs.eax;
+					CPhysical* physical = (CPhysical*)regs.eax;
 					if (physical->m_nType == eEntityType::ENTITY_TYPE_PED)
 					{
-						CPed *ped = (CPed *)regs.eax;
+						CPed* ped = (CPed*)regs.eax;
 						if (ped->IsPlayer()) // we only need this for player, due to swim bug
 						{
 							f = (1.0f + ((CTimer::ms_fTimeStep / magic) / 1.5f)) * (CTimer::ms_fTimeStep / magic);
@@ -122,8 +122,8 @@ public:
 					asm_fmul(f);
 				}
 			}; MakeInline<DiveFix>(0x68A42B, 0x68A42B + 6);
-			
-			
+
+
 			struct DiveSprintComeToSurfaceFix
 			{
 				void operator()(reg_pack& regs)
@@ -250,7 +250,7 @@ public:
 			MakeInline<CarSlowDownSpeedFixMul>(0x5515ED, 0x5515ED + 6);
 			MakeInline<CarSlowDownSpeedFix>(0x551600, 0x551600 + 6);
 		#endif
-		
+
 
 			static unsigned int hornPressLastTime = 0;
 			static bool hornHasPressed = false;
@@ -260,8 +260,8 @@ public:
 			{
 				void operator()(reg_pack& regs)
 				{
-					CPad *pad;
-					CVehicle *vehicle = (CVehicle *)regs.esi;
+					CPad* pad;
+					CVehicle* vehicle = (CVehicle*)regs.esi;
 
 				#if defined(GTASA)
 					// Bonus: fix second player unable to toggle siren
@@ -300,7 +300,7 @@ public:
 						returnAddress = 0x6E0999;
 					#endif
 					#if defined(GTAVC)
-						returnAddress = 0x597AB5; 
+						returnAddress = 0x597AB5;
 					#endif
 					#if defined(GTA3)
 						returnAddress = 0x5340EB;
@@ -309,7 +309,7 @@ public:
 					else {
 						// no horn return
 					#if defined(GTASA)
-						returnAddress = 0x6E09F7; 
+						returnAddress = 0x6E09F7;
 					#endif
 					#if defined(GTAVC)
 						returnAddress = 0x597AE0;
@@ -330,14 +330,14 @@ public:
 		#if defined(GTA3)
 			MakeInline<SirenTurnOnFix>(0x00534092);
 		#endif
-	
+
 
 		#if defined(GTASA)
 			struct HeliRotorIncreaseSpeedA
 			{
 				void operator()(reg_pack& regs)
 				{
-					float *rotorFinalSpeed = ReadMemory<float*>(0x006C4EFE + 2, false); // MixSets adaptation
+					float* rotorFinalSpeed = ReadMemory<float*>(0x006C4EFE + 2, false); // MixSets adaptation
 					float f = ((*rotorFinalSpeed / 220.0f) * 3.0f) * (CTimer::ms_fTimeStep / magic);
 					asm_fadd(f);
 				}
@@ -348,7 +348,7 @@ public:
 			{
 				void operator()(reg_pack& regs)
 				{
-					float *rotorFinalSpeed = ReadMemory<float*>(0x006C4EFE + 2, false); // MixSets adaptation
+					float* rotorFinalSpeed = ReadMemory<float*>(0x006C4EFE + 2, false); // MixSets adaptation
 					float f = (*rotorFinalSpeed / 220.0f) * (CTimer::ms_fTimeStep / magic);
 					asm_fadd(f);
 				}
@@ -361,23 +361,37 @@ public:
 			{
 				void operator()(reg_pack& regs)
 				{
-					float *rotorFinalSpeed = ReadMemory<float*>(0x005AF238 + 2, true); // MixSets adaptation
+					float* rotorFinalSpeed = ReadMemory<float*>(0x005AF238 + 2, true); // MixSets adaptation
 					float f = (*rotorFinalSpeed / 13.0f) * (CTimer::ms_fTimeStep / magic);
 					asm_fadd(f);
 				}
 			}; MakeInline<HeliRotorIncreaseSpeedVCAdd>(0x5AF226, 0x5AF226 + 6);
-		
+
 			struct HeliRotorIncreaseSpeedVCSub
 			{
 				void operator()(reg_pack& regs)
 				{
-					float *rotorFinalSpeed = ReadMemory<float*>(0x005AF238 + 2, true); // MixSets adaptation
+					float* rotorFinalSpeed = ReadMemory<float*>(0x005AF238 + 2, true); // MixSets adaptation
 					float f = *rotorFinalSpeed * (CTimer::ms_fTimeStep / magic);
 					asm_fsub(f);
 				}
 			}; MakeInline<HeliRotorIncreaseSpeedVCSub>(0x5AF24B, 0x5AF24B + 6);
 		#endif 
 
+		#if defined(GTASA)
+			struct PedPushCarForce
+			{
+				void operator()(reg_pack& regs)
+				{
+					*(float*)(regs.esp + 0xB0 - 0x90 + 0x0) *= (CTimer::ms_fTimeStep / magic);
+					*(float*)(regs.esp + 0xB0 - 0x90 + 0x4) *= (CTimer::ms_fTimeStep / magic);
+					*(float*)(regs.esp + 0xB0 - 0x90 + 0x8) *= (CTimer::ms_fTimeStep / magic);
+					regs.edx = *(uint32_t*)(regs.esp + 0xB0 - 0x90 + 0x0); //mov     eax, [esp+0B0h+out_result.y]
+					regs.eax = *(uint32_t*)(regs.esp + 0xB0 - 0x90 + 0x4); //mov     eax, [esp+0B0h+out_result.y]
+				}
+			}; MakeInline<PedPushCarForce>(0x549652, 0x549652 + 8);
+		#endif
+
 		}; //endof init
-    }
+	}
 } framerateVigilante;
