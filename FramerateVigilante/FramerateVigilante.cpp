@@ -3,6 +3,7 @@
 #include "../injector/assembly.hpp"
 #include "CWorld.h"
 #include "CTimer.h"
+#include "CRunningScript.h"
 
 using namespace plugin;
 using namespace injector;
@@ -20,10 +21,25 @@ public:
 	static void asm_fld_st1() { _asm {fld st(1)} }
 	static void asm_fld_st2() { _asm {fld st(2)} }
 
+	static inline int _fpsLimit;
+	static inline int _lastFpsLimit;
+	static inline int _refreshRate;
+	static inline bool _autoLimitFPS;
+
+	union {
+		int _isOnFlagsInt;
+		struct {
+			unsigned int poolGame : 1;
+			unsigned int drivingSchool : 1;
+			unsigned int boatSchool : 1;
+			unsigned int bikeSchool : 1;
+		} _isOnFlags;
+	};
+
 	FramerateVigilante()
 	{
 		/////////////////////////////////////
-
+		
 		// Generic
 
 		static constexpr float magic = 50.0f / 30.0f;
@@ -48,26 +64,51 @@ public:
 
 		// Run after. It fixes problems such as installing f92la in modloader while using handling patch.
 		Events::initRwEvent += [] {
+
+			_lastFpsLimit = 0;
 			
 			CIniReader ini("FramerateVigilante.ini");
-			unsigned int fpsLimit = ini.ReadInteger("Settings", "FPSlimit", 0);
-			if (fpsLimit > 0) {
+			_fpsLimit = ini.ReadInteger("Settings", "FPSlimit", 0);
+
+			if (_fpsLimit > 0) {
 			#if defined(GTASA)
 				WriteMemory<uint8_t>(0x53E94C, 0, true); //removes 14 ms frame delay
-				WriteMemory<uint8_t>(0x619626, fpsLimit, true);
-				WriteMemory<uint8_t>(0xC1704C, fpsLimit, false);
+				WriteMemory<uint8_t>(0x619626, _fpsLimit, true);
+				WriteMemory<uint8_t>(0xC1704C, _fpsLimit, false);
 			#endif
 			#if defined(GTAVC)
-				WriteMemory<uint8_t>(0x602D68, fpsLimit, true);
-				WriteMemory<uint8_t>(0x9B48EC, fpsLimit, false);
+				WriteMemory<uint8_t>(0x602D68, _fpsLimit, true);
+				WriteMemory<uint8_t>(0x9B48EC, _fpsLimit, false);
 			#endif
 			#if defined(GTA3)
-				WriteMemory<uint8_t>(0x584C78, fpsLimit, true);
-				WriteMemory<uint8_t>(0x8F4374, fpsLimit, false);
+				WriteMemory<uint8_t>(0x584C78, _fpsLimit, true);
+				WriteMemory<uint8_t>(0x8F4374, _fpsLimit, false);
+			#endif
+			}
+
+			_refreshRate = ini.ReadInteger("Settings", "RefreshRate", 0);
+
+			if (_refreshRate > 0 && _refreshRate != 60) {
+			#if defined(GTASA)
+				//WriteMemory<uint8_t>(0x74612A + 2, _refreshRate); //min hz
+				//patch::RedirectCall(0x74631E, PatchedSetRefreshRate);
+				RwD3D9EngineSetRefreshRate(_refreshRate);
+			#endif
+			#if defined(GTAVC)
+				//WriteMemory<uint8_t>(0x60105B + 2, _refreshRate); //min hz
+				//patch::RedirectCall(0x600F66, PatchedSetRefreshRate);
+				RwD3D8EngineSetRefreshRate(_refreshRate);
+			#endif
+			#if defined(GTA3)
+				//WriteMemory<uint8_t>(0x581D55 + 2, _refreshRate); //min hz
+				//patch::RedirectCall(0x581F46, PatchedSetRefreshRate);
+				RwD3D8EngineSetRefreshRate(_refreshRate);
 			#endif
 			}
 
 		#if defined(GTASA)
+
+			_autoLimitFPS = ini.ReadInteger("Settings", "AutoLimitFPS", 0);
 
 
 			struct AimingRifleWalkFix
@@ -392,6 +433,46 @@ public:
 			}; MakeInline<PedPushCarForce>(0x549652, 0x549652 + 8);
 		#endif
 
-		}; //endof init
+		}; //end of init
+
+	#if defined(GTASA)
+		if (_autoLimitFPS) {
+			Events::processScriptsEvent += []() {
+
+				// Consider submissions/minigames
+				framerateVigilante._isOnFlagsInt = 0; //reset
+				CRunningScript** activeThreadQueue = (CRunningScript**)0x00A8B42C;
+				for (auto script = *activeThreadQueue; script; script = script->m_pNext)
+				{
+					if (_stricmp("POOL2", script->m_szName) == 0) {
+						framerateVigilante._isOnFlags.poolGame = true;
+					}
+					else if (_stricmp("DSKOOL", script->m_szName) == 0) {
+						framerateVigilante._isOnFlags.drivingSchool = true;
+					}
+					else if (_stricmp("BOAT", script->m_szName) == 0) {
+						framerateVigilante._isOnFlags.boatSchool = true;
+					}
+					else if (_stricmp("BSKOOL", script->m_szName) == 0) {
+						framerateVigilante._isOnFlags.bikeSchool = true;
+					}
+				}
+				if (framerateVigilante._isOnFlagsInt != 0) {
+					if (_lastFpsLimit == 0) {
+						_lastFpsLimit = ReadMemory<uint8_t>(0xC1704C, false);
+					}
+					WriteMemory<uint8_t>(0xC1704C, 30, false);
+				}
+				else {
+					if (_lastFpsLimit != 0) {
+						WriteMemory<uint8_t>(0xC1704C, _lastFpsLimit, false);
+						_lastFpsLimit = 0;
+					}
+				}
+
+			}; //end of processScriptsEvent
+		}
+	#endif
+
 	}
 } framerateVigilante;
