@@ -33,6 +33,7 @@ public:
 			unsigned int drivingSchool : 1;
 			unsigned int boatSchool : 1;
 			unsigned int bikeSchool : 1;
+			unsigned int gfSex : 1;
 		} _isOnFlags;
 	};
 
@@ -455,6 +456,9 @@ public:
 					}
 					else if (_stricmp("BSKOOL", script->m_szName) == 0) {
 						framerateVigilante._isOnFlags.bikeSchool = true;
+					}
+					else if (_stricmp("GFSEX", script->m_szName) == 0) {
+						framerateVigilante._isOnFlags.gfSex = true;
 					}
 				}
 				if (framerateVigilante._isOnFlagsInt != 0) {
