@@ -269,7 +269,11 @@ public:
 			{
 				void operator()(reg_pack& regs)
 				{
-					float f = 0.9f * (CTimer::ms_fTimeStep / magic);
+					#if defined(GTASA)
+						float f = 0.6f * (CTimer::ms_fTimeStep / magic);
+					#else
+						float f = 0.9f * (CTimer::ms_fTimeStep / magic); // TODO: Check
+					#endif
 					asm_fld(f);
 				}
 			};
@@ -278,7 +282,7 @@ public:
 			{
 				void operator()(reg_pack& regs)
 				{
-					float f = 0.9f * (CTimer::ms_fTimeStep / magic);
+					float f = 0.9f * (CTimer::ms_fTimeStep / magic); // TODO: Check
 					asm_fmul(f);
 				}
 			};
