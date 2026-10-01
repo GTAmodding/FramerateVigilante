@@ -110,6 +110,36 @@ void __declspec(naked) asm_SwingCompDampingD() {
 	}
 }
 
+// Per-frame effect emission fix
+// Returns true with chance ms_fTimeStep / normalizer, so something emitted once per frame keeps the 30 fps rate on average.
+// Random instead of accumulator because the same call site is shared by all peds. Own RNG to not change the game's rand() sequence.
+
+static uint32_t emissionRngState = 0x9E3779B9;
+
+static bool EmitThisFrame()
+{
+	float chance = CTimer::ms_fTimeStep / normalizer;
+	if (chance >= 1.0f) return true;
+	emissionRngState ^= emissionRngState << 13;
+	emissionRngState ^= emissionRngState >> 17;
+	emissionRngState ^= emissionRngState << 5;
+	return (emissionRngState >> 8) * (1.0f / 16777216.0f) < chance;
+}
+
+// FxPrt_c::AddParticle (8 args)
+void __fastcall AddParticlePerFrame(void* prt, int, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8)
+{
+	if (!EmitThisFrame()) return;
+	((void(__thiscall*)(void*, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t))0x4AA440)(prt, a1, a2, a3, a4, a5, a6, a7, a8);
+}
+
+// FxManager_c::CreateFxSystem (4 args), null result makes caller skip it
+void* __fastcall CreateFxSystemPerFrame(void* fxManager, int, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4)
+{
+	if (!EmitThisFrame()) return nullptr;
+	return ((void*(__thiscall*)(void*, uint32_t, uint32_t, uint32_t, uint32_t))0x4A9BE0)(fxManager, a1, a2, a3, a4);
+}
+
 /////////////////////////////////////
 
 class FramerateVigilante
@@ -240,6 +270,15 @@ public:
 					asm_fmul(4.0f / (CTimer::ms_fTimeStep / normalizer));
 				}
 			}; MakeInline<BuoyancyCutoffFix>(0x6C27C2, 0x6C27C2 + 6);
+
+
+			// CTaskSimpleSwim::ProcessEffects emits every frame
+			MakeCALL(0x68ADE2, AddParticlePerFrame, true); // surface sprint wake
+			MakeCALL(0x68AD31, AddParticlePerFrame, true); // underwater bubbles
+			MakeCALL(0x68AEBA, CreateFxSystemPerFrame, true); // sprinting "water_swim" splashes on 4 bones (+ its audio event)
+			MakeCALL(0x68AF15, CreateFxSystemPerFrame, true);
+			MakeCALL(0x68AF66, CreateFxSystemPerFrame, true);
+			MakeCALL(0x68AFB3, CreateFxSystemPerFrame, true);
 
 
 			// Dive z is a constant speed (anim progress * -0.1), cancel SwimSpeedFix scaling
