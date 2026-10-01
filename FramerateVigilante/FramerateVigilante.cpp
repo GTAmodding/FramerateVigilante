@@ -211,13 +211,17 @@ public:
 			}; MakeInline<AimingRifleWalkFix>(0x61E0CA, 0x61E0CA + 6);
 
 
+			// CTaskSimpleSwim::ProcessSwimmingResistance fixes
+			// The target velocity is built from m_vecAnimMovingShiftLocal, which is a per-frame distance (walking divides it by ms_fTimeStep, swimming doesn't).
+			// So the whole target (x, y, z) is converted to speed here; constants added to it per swim state are pre-multiplied by ts/normalizer to cancel this.
 			struct SwimSpeedFix
 			{
 				void operator()(reg_pack& regs)
 				{
-					*(float*)(regs.esp + 0x1C) *= 1.0f / (CTimer::ms_fTimeStep / normalizer);
-					*(float*)(regs.esp + 0x20) *= 1.0f / (CTimer::ms_fTimeStep / normalizer);
-					*(float*)(regs.esp + 0x18) *= 1.0f / (CTimer::ms_fTimeStep / normalizer);
+					float scale = 1.0f / (CTimer::ms_fTimeStep / normalizer);
+					*(float*)(regs.esp + 0x1C) *= scale; // x * (1 - p)
+					*(float*)(regs.esp + 0x20) *= scale; // y * (1 - p)
+					asm_fmul(scale); // ST(0) = z * (1 - p)
 
 					float f = *(float*)(regs.eax + 0x00);
 					asm_fld_st1();
@@ -227,25 +231,18 @@ public:
 			}; MakeInline<SwimSpeedFix>(0x68A50E, 0x68A50E + 6);
 
 
-			struct BuoyancySpeedFix
+			// cBuoyancy::CalcBuoyancyForce: buoyancy is cut when mass * m_vecMoveSpeed.z > force * 4.0, but force is per frame (* ms_fTimeStep) and momentum isn't,
+			// so rising speed was capped lower at high FPS. Compare against the 30 fps force.
+			struct BuoyancyCutoffFix
 			{
 				void operator()(reg_pack& regs)
 				{
-					float f = CTimer::ms_fTimeStep;
-					CPhysical* physical = (CPhysical*)regs.eax;
-					if (physical->m_nType == eEntityType::ENTITY_TYPE_PED)
-					{
-						CPed* ped = (CPed*)regs.eax;
-						if (ped->IsPlayer()) // we only need this for player, due to swim bug
-						{
-							f = (1.0f + ((CTimer::ms_fTimeStep / normalizer) / 1.5f)) * (CTimer::ms_fTimeStep / normalizer);
-						}
-					}
-					asm_fmul(f);
+					asm_fmul(4.0f / (CTimer::ms_fTimeStep / normalizer));
 				}
-			}; MakeInline<BuoyancySpeedFix>(0x6C27AE, 0x6C27AE + 6);
+			}; MakeInline<BuoyancyCutoffFix>(0x6C27C2, 0x6C27C2 + 6);
 
 
+			// Dive z is a constant speed (anim progress * -0.1), cancel SwimSpeedFix scaling
 			struct DiveFix
 			{
 				void operator()(reg_pack& regs)
@@ -256,15 +253,37 @@ public:
 			}; MakeInline<DiveFix>(0x68A42B, 0x68A42B + 6);
 
 
+			// Underwater sprint z: anim part is scaled by SwimSpeedFix, the +0.01 come-to-surface speed must not be
 			struct DiveSprintComeToSurfaceFix
 			{
 				void operator()(reg_pack& regs)
 				{
-					float f = 1.0f / (CTimer::ms_fTimeStep / normalizer);
-					asm_fadd(0.01f);
-					asm_fmul(f);
+					asm_fadd(0.01f * (CTimer::ms_fTimeStep / normalizer));
 				}
 			}; MakeInline<DiveSprintComeToSurfaceFix>(0x68A4CA, 0x68A4CA + 6);
+
+
+			// Surface hold: velocity towards water level is clamped to ms_fTimeStep * 0.1, make it the 30 fps value
+			struct SwimSurfaceSpeedLimitFix
+			{
+				void operator()(reg_pack& regs)
+				{
+					asm_fld(normalizer); // * 0.1 by original code
+				}
+			}; MakeInline<SwimSurfaceSpeedLimitFix>(0x68A7E6, 0x68A7E6 + 6);
+
+
+			// Dive pitch rate damping (*= 0.95 per frame)
+			struct SwimPitchDampingFix
+			{
+				void operator()(reg_pack& regs)
+				{
+					asm_fmul(powf(0.95f, CTimer::ms_fTimeStep / normalizer));
+				}
+			};
+			MakeInline<SwimPitchDampingFix>(0x68A6BD, 0x68A6BD + 6);
+			MakeInline<SwimPitchDampingFix>(0x68A735, 0x68A735 + 6);
+			MakeInline<SwimPitchDampingFix>(0x68A7BD, 0x68A7BD + 6);
 
 			struct SkimmerResistanceFix
 			{
