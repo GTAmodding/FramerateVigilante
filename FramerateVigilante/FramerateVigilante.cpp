@@ -55,35 +55,11 @@ void _declspec(naked) asm_SwingCompAdd() {
 	}
 }
 
-void __declspec(naked) asm_SwingCompForceA() {
-	__asm {
-		fmul    st, st(1) //v18 * v15 to ST(0)
-
-		fmul    dword ptr ds : [0xB7CB5C] //ST(0) *= CTimer::ms_fTimeStep
-		fmul    dword ptr[normalizer]  //ST(0) *= 0.6f
-		fadd    dword ptr[esi + 14h] //m_fAngVel
-
-		push    0x6F42E0
-		ret
-	}
-}
-
-void __declspec(naked) asm_SwingCompForceB() {
-	__asm {
-		fmul    dword ptr ds : [0xB7CB5C] //ST(0) (v15) *= CTimer::ms_fTimeStep
-		fmul    dword ptr[normalizer]  //ST(0) (v15) *= 0.6f
-		fadd    dword ptr[esi + 14h] //m_fAngVel
-		fstp    dword ptr[esi + 14h] //original
-
-		push    0x6F4383
-		ret
-	}
-}
-
 // Swing comp damping fix
 
-static const float fLossA = 0.08f; // 1.0f - 0.92f (firela ladder / chassis)
+static const float fLossA = 0.08f; // 1.0f - 0.92f (firela ladder)
 static const float fLossB = 0.03f; // 1.0f - 0.97f (other)
+static const float fLossC = 0.02f; // 1.0f - 0.98f (boat)
 static const float fOne = 1.0f;
 
 void __declspec(naked) asm_SwingCompDampingA() {
@@ -106,6 +82,30 @@ void __declspec(naked) asm_SwingCompDampingB() {
 		fsubr   dword ptr[fOne]
 
 		push    0x6F43D0
+		ret
+	}
+}
+
+void __declspec(naked) asm_SwingCompDampingC() {
+	__asm {
+		fld     dword ptr ds : [0xB7CB5C] //ms_fTimeStep
+		fmul    dword ptr[normalizerMult]
+		fmul    dword ptr[fLossC]
+		fsubr   dword ptr[fOne]
+
+		push    0x6F43D8
+		ret
+	}
+}
+
+void __declspec(naked) asm_SwingCompDampingD() {
+	__asm {
+		fld     dword ptr ds : [0xB7CB5C] //ms_fTimeStep
+		fmul    dword ptr[normalizerMult]
+		fmul    dword ptr[fLossB]
+		fsubr   dword ptr[fOne]
+
+		push    0x6F43D8
 		ret
 	}
 }
@@ -197,10 +197,10 @@ public:
 
 			// Swing Door (mainly CDoor::Process) fixes
 			MakeJMP(0x6F4422, asm_SwingCompAdd, true);
-			MakeJMP(0x6F42DB, asm_SwingCompForceA, true);
-			MakeJMP(0x6F437D, asm_SwingCompForceB, true);
-			MakeJMP(0x6F43A1, asm_SwingCompDampingA, true);
-			MakeJMP(0x6F43CA, asm_SwingCompDampingB, true);
+			MakeJMP(0x6F43A1, asm_SwingCompDampingA, true); // firela
+			MakeJMP(0x6F43CA, asm_SwingCompDampingB, true); // m_nDirn & 0x20
+			MakeJMP(0x6F4391, asm_SwingCompDampingC, true); // boat
+			MakeJMP(0x6F43D2, asm_SwingCompDampingD, true); // other
 
 			struct AimingRifleWalkFix
 			{
