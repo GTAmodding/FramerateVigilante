@@ -152,6 +152,46 @@ public:
 	static inline bool _firstlySetFPS;
 	static inline bool _isOnPauseMenu;
 
+#if defined(GTASA)
+	static inline bool _wasInGym;
+	static inline unsigned int _gymExitLimitStartTime;
+	static constexpr unsigned int gymExitGracePeriodMs = 1000;
+
+	static bool IsPlayerInGym()
+	{
+		auto* player = CWorld::Players[0].m_pPed;
+		if (!player) return false;
+
+		const CVector& pos = player->GetPosition();
+		float gymX;
+		float gymY;
+
+		switch (CGame::currArea)
+		{
+		case 5: // Ganton Gym, Los Santos
+			gymX = 768.0793f;
+			gymY = 5.8606f;
+			break;
+		case 6: // Cobra Martial Arts Gym, San Fierro
+			gymX = 774.0870f;
+			gymY = -47.9830f;
+			break;
+		case 7: // Below the Belt Gym, Las Venturas
+			gymX = 774.2430f;
+			gymY = -76.0090f;
+			break;
+		default:
+			return false;
+		}
+
+		// Interior IDs 5-7 are shared with other interiors, so also check
+		// proximity to the actual gym interior instead of limiting all of them.
+		const float dx = pos.x - gymX;
+		const float dy = pos.y - gymY;
+		return (dx * dx + dy * dy) < (80.0f * 80.0f);
+	}
+#endif
+
 	union AutoLimitFPS {
 		int flagsInt;
 		struct {
@@ -161,6 +201,7 @@ public:
 			unsigned int forCutscenes : 1;
 			unsigned int forScriptedCutscenes : 1;
 			unsigned int forPauseMenu : 1;
+			unsigned int forGyms : 1;
 		} flags;
 	};
 	static inline AutoLimitFPS autoLimitFPS;
@@ -185,6 +226,9 @@ public:
 		autoLimitFPS.flags.forCutscenes = ini.ReadInteger("AutoLimitFPS", "ForCutscenes", 1);
 		autoLimitFPS.flags.forScriptedCutscenes = ini.ReadInteger("AutoLimitFPS", "ForScriptedCutscenes", 1);
 		autoLimitFPS.flags.forPauseMenu = ini.ReadInteger("AutoLimitFPS", "ForPauseMenu", 1);
+#if defined(GTASA)
+		autoLimitFPS.flags.forGyms = ini.ReadInteger("AutoLimitFPS", "ForGyms", 1);
+#endif
 
 		// Run after. It fixes problems such as installing f92la in modloader while using handling patch.
 		Events::initRwEvent += [] {
@@ -616,7 +660,32 @@ public:
 
 					// Auto limit FPS on specific game cases
 					int preferableFpsLimit = 0;
-					if (CCutsceneMgr::ms_running) {
+
+					// Gym exits can immediately retrigger the entrance at high FPS while
+					// the exterior is still streaming. Keep 30 FPS inside the three gyms
+					// and for a short grace period after returning to the outside world.
+					bool keepGymLimit = false;
+					if (autoLimitFPS.flags.forGyms) {
+						const bool isInGym = IsPlayerInGym();
+						if (isInGym) {
+							_wasInGym = true;
+							keepGymLimit = true;
+						}
+						else if (_wasInGym) {
+							_wasInGym = false;
+							_gymExitLimitStartTime = CTimer::m_snTimeInMilliseconds;
+							keepGymLimit = true;
+						}
+						else if (_gymExitLimitStartTime != 0 &&
+							CTimer::m_snTimeInMilliseconds - _gymExitLimitStartTime < gymExitGracePeriodMs) {
+							keepGymLimit = true;
+						}
+					}
+
+					if (keepGymLimit) {
+						preferableFpsLimit = 30;
+					}
+					else if (CCutsceneMgr::ms_running) {
 						if (autoLimitFPS.flags.forCutscenes) preferableFpsLimit = 60;
 					}
 					else if (TheCamera.m_bWideScreenOn) // Scene borders, used for scripted scenes
