@@ -322,7 +322,7 @@ public:
 			};
 			MakeInline<SwimPitchDampingFix>(0x68A6BD, 0x68A6BD + 6);
 			MakeInline<SwimPitchDampingFix>(0x68A735, 0x68A735 + 6);
-			MakeInline<SwimPitchDampingFix>(0x68A7BD, 0x68A7BD + 6);
+			MakeInline<SwimPitchDampingFix>(0x68A7C0, 0x68A7C0 + 6);
 
 			struct SkimmerResistanceFix
 			{
